@@ -1,0 +1,180 @@
+{% comment %}
+  @param layout {String}
+    Layout type
+
+  @param is_product_modal {Bool}
+    Is the snippet being loaded in a QuickShop
+{% endcomment %}
+
+{% assign enable_social_sharing = settings.product_social_sharing %}
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% comment %}{% assign selected_image = selected_variant.image | default: product.featured_image %}{% endcomment %} <!-- CD -->
+{% assign selected_image = product.featured_image %} <!-- CD -->
+{% include 'saw_compute_discount' with product %}
+{% include 'saw_variant' with selected_variant %}
+{% if saw_has_discount == false or saw_variant_price >= saw_variant_compare_at_price %}
+    {% assign compare_at_price = selected_variant.compare_at_price %}
+    {% assign price = selected_variant.price %}
+  {% else %}
+	{% assign compare_at_price = saw_variant_compare_at_price %}
+    {% assign price = saw_variant_price %}
+{% endif %}
+{% assign product_available = product.available %}
+
+{% assign on_sale = false %}
+{% if compare_at_price > price or saw_has_discount%}
+  {% assign on_sale = true %}
+{% endif %}
+
+{%
+  include 'consistent-savings',
+  variants: product.variants,
+  on_sale: on_sale
+%}
+
+{%- capture share_buttons -%}
+  {% assign social_image = product | img_url: '1024x' %}
+  {% assign social_url = shop.url | append: product.url %}
+  {%-
+    include 'share-buttons',
+    snippet_title: 'general.share_buttons.title',
+    social_image: social_image,
+    social_title: product.title,
+    social_url: social_url
+  -%}
+{%- endcapture  -%}
+
+<article class="product--outer">
+  {% comment %}
+    Product slideshow, never moves
+  {% endcomment %}
+  <div class="product-gallery" data-product-gallery>
+    {%
+      include 'product-gallery',
+      selected_image: selected_image
+    %}
+  </div>
+
+  <div class="product-main">
+    <div class="product-details" data-product-details>
+      {% if is_product_modal %}
+        <h2 class="product-title">
+          <a href="{{ product.url | within: collection }}">{{ product.title }}</a>
+        </h2>
+      {% else %}
+        <h1 class="product-title">
+          {{ product.title }}
+        </h1>
+      {% endif %}
+
+      {% if settings.product_show_vendor and product.vendor != blank %}
+        <div class="product-vendor">
+          {{ 'product.general.by_vendor' | t: vendor: product.vendor }}
+        </div>
+      {% endif %}
+	  <!-- Shopper Approved product star -- product.liquid -->
+      <div id="product_just_stars" class="reg"></div>
+      <!-- Shopper Approved product star -- product.liquid -->
+      {% if settings.product_ratings_reviews %}
+        <div class="product-ratings" style='display:none;'>
+          <span class="shopify-product-reviews-badge" data-id="{{ product.id }}">
+            <span class="spr-badge">
+              <span class="spr-starrating spr-badge-starrating">
+                <i class="spr-icon spr-icon-star-empty"></i>
+                <i class="spr-icon spr-icon-star-empty"></i>
+                <i class="spr-icon spr-icon-star-empty"></i>
+                <i class="spr-icon spr-icon-star-empty"></i>
+                <i class="spr-icon spr-icon-star-empty"></i>
+              </span>
+            </span>
+          </span>
+        </div>
+      {% endif %}
+
+      <div class="product-pricing">
+        {%
+          include 'product-badge',
+          class_root: 'product',
+          product_available: product_available,
+          on_sale: on_sale,
+          price: price,
+          compare_at_price: compare_at_price,
+          show_saved: true
+        %}
+
+        {%
+          include 'product-price',
+          class_root: 'product',
+          price: price,
+          price_varies: false,
+          compare_at_price: compare_at_price,
+          compare_at_price_varies: false,
+          on_sale: on_sale,
+          emphasize_price: false,
+          show_original: true
+        %}
+      </div>
+    </div>
+
+    {% comment %}
+      Product form original location, will remain unless is 3 column layout
+    {% endcomment %}
+    <div class="product-form--regular" data-product-form-regular>
+      <div data-product-form-area>
+        {% if is_product_modal %}
+          <div data-product-quickshop-message class="product-message--container"></div>
+        {% endif %}
+
+        {%
+          include 'product-form',
+          product: product,
+          selected_variant: selected_variant
+        %}
+
+        {% if enable_social_sharing and is_product_modal == false %}
+          {{ share_buttons | strip_newlines }}
+        {% endif %}
+      </div>
+    </div>
+
+    {% comment %}
+      Product description field, never moves
+    {% endcomment %}
+    {% if product.description != blank %}
+      <div class="product-description rte" data-product-description>
+        {{ product.description }}
+      </div>
+    {% endif %}
+
+    {% if enable_social_sharing and is_product_modal %}
+      {{ share_buttons | strip_newlines }}
+    {% endif %}
+  </div>
+
+  {% comment %}
+    If is a 3 column layout, the form will move here at $bp-large (layout.isBreakpoint('L'))
+  {% endcomment %}
+  {% if layout == 'layout--three-col' %}
+    <div class="product-form--alt" data-product-form-alt></div>
+  {% endif %}
+  	<hr/>
+	<div data-product-details>
+      <h3>Reviews:</h3>
+      <script type="text/javascript"> var sa_products_count = 3; var sa_date_format = 'F j, Y'; var sa_product = '{{ product.id }}'; (function(w,d,t,f,o,s,a){ o = 'shopperapproved'; if (!w[o]) { w[o] = function() { (w[o].arg = w[o].arg || []).push(arguments) }; s=d.createElement(t), a=d.getElementsByTagName(t)[0];s.async=1;s.src=f;a.parentNode.insertBefore(s,a)} })(window,document,'script','//www.shopperapproved.com/product/31118/'+sa_product+'.js'); </script> <div id="shopper_review_page"><div id="review_header"></div><div id="product_page"></div><div id="review_image"><a href="https://www.shopperapproved.com/reviews/golfcartstuff.com/" onclick="var nonwin=navigator.appName!='Microsoft Internet Explorer'?'yes':'no'; var certheight=screen.availHeight-90; window.open(this.href,'shopperapproved','location='+nonwin+',scrollbars=yes,width=620,height='+certheight+',menubar=no,toolbar=no'); return false;" target="_blank" rel="nofollow"></a></div></div>
+      <style>
+        .sa_jump_to_reviews{cursor:pointer;    color: #0068A9;}
+         .sa_jump_to_reviews:hover{ text-decoration:underline}
+         .group-stars .ind_cnt {
+            font-size: 13px;
+            display: inline;
+            margin-left: 10px;
+        }
+          #product_just_stars .ind_cnt {
+            font-size: 13px !important;
+            display: inline;
+            margin-left: 10px;
+        }
+      </style>
+ 	</div>
+</article>
+
